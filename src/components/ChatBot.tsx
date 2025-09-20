@@ -16,7 +16,10 @@ import {
   CheckCircle,
   Lightbulb,
   Minimize2,
-  Volume2
+  Volume2,
+  Mic,
+  MicOff,
+  Keyboard
 } from "lucide-react";
 
 interface Message {
@@ -43,7 +46,11 @@ const ChatBot = () => {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [showKeyboard, setShowKeyboard] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -149,6 +156,120 @@ Would you like me to explain any part of this analysis in more detail?`;
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        await processAudioTranscription(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const processAudioTranscription = async (audioBlob: Blob) => {
+    // Mock transcription - in real implementation, use speech-to-text service
+    const mockTranscriptions = [
+      "Can you verify this claim about climate change?",
+      "Is this news article reliable?",
+      "Check if this information is accurate",
+      "Analyze this content for misinformation",
+      "Tell me about fact checking methods"
+    ];
+    
+    const transcription = mockTranscriptions[Math.floor(Math.random() * mockTranscriptions.length)];
+    setInputValue(transcription);
+  };
+
+  const speakMessage = async (text: string) => {
+    // Mock text-to-speech - in real implementation, use ElevenLabs API
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text.replace(/\*\*/g, ''));
+      utterance.rate = 0.9;
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const VirtualKeyboard = () => {
+    const keys = [
+      ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+      ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+      ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+      ['z', 'x', 'c', 'v', 'b', 'n', 'm']
+    ];
+
+    const handleKeyClick = (key: string) => {
+      if (key === 'space') {
+        setInputValue(prev => prev + ' ');
+      } else if (key === 'backspace') {
+        setInputValue(prev => prev.slice(0, -1));
+      } else {
+        setInputValue(prev => prev + key);
+      }
+    };
+
+    return (
+      <div className="bg-muted/50 backdrop-blur-sm border border-border rounded-lg p-2 space-y-1">
+        {keys.map((row, rowIndex) => (
+          <div key={rowIndex} className="flex justify-center space-x-1">
+            {row.map((key) => (
+              <Button
+                key={key}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 text-xs"
+                onClick={() => handleKeyClick(key)}
+              >
+                {key}
+              </Button>
+            ))}
+          </div>
+        ))}
+        <div className="flex justify-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-4 text-xs"
+            onClick={() => handleKeyClick('space')}
+          >
+            Space
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-4 text-xs"
+            onClick={() => handleKeyClick('backspace')}
+          >
+            ⌫
+          </Button>
+        </div>
+      </div>
+    );
   };
 
   const formatMessage = (message: Message) => {
@@ -288,7 +409,12 @@ Would you like me to explain any part of this analysis in more detail?`;
                       {formatMessage(message)}
                       {message.type === 'analysis' && (
                         <div className="flex items-center space-x-2 mt-3 pt-2 border-t border-border/20">
-                          <Button variant="ghost" size="sm" className="text-xs">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-xs"
+                            onClick={() => speakMessage(message.content)}
+                          >
                             <Volume2 className="mr-1 h-3 w-3" />
                             Listen
                           </Button>
@@ -321,7 +447,7 @@ Would you like me to explain any part of this analysis in more detail?`;
             </ScrollArea>
 
             {/* Input */}
-            <div className="p-4 border-t border-border">
+            <div className="p-4 border-t border-border space-y-3">
               <div className="flex space-x-2">
                 <Input
                   value={inputValue}
@@ -332,6 +458,22 @@ Would you like me to explain any part of this analysis in more detail?`;
                   disabled={isLoading}
                 />
                 <Button
+                  onClick={isRecording ? stopRecording : startRecording}
+                  variant={isRecording ? "destructive" : "outline"}
+                  size="sm"
+                  className="hover-lift"
+                >
+                  {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </Button>
+                <Button
+                  onClick={() => setShowKeyboard(!showKeyboard)}
+                  variant="outline"
+                  size="sm"
+                  className="hover-lift"
+                >
+                  <Keyboard className="h-4 w-4" />
+                </Button>
+                <Button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isLoading}
                   size="sm"
@@ -340,7 +482,10 @@ Would you like me to explain any part of this analysis in more detail?`;
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="flex items-center space-x-2 mt-2">
+              
+              {showKeyboard && <VirtualKeyboard />}
+              
+              <div className="flex items-center space-x-2">
                 <Shield className="h-3 w-3 text-primary" />
                 <span className="text-xs text-muted-foreground">
                   Powered by Truthlens AI • Always verify important claims
