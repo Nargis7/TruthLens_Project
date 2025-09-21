@@ -1,8 +1,10 @@
-# 🕵️ Truthlens: AI-Powered Misinformation Detection & Education Tool
+# 🕵️ Truthlens: AI-Powered Tool For Combating Misinformation
 
 ## 🚀 Overview
 In today’s world, misinformation spreads faster than truth. Fake news, manipulated videos, and scams are shaping public opinion, creating confusion, and eroding trust.  
 <img width="1647" height="709" alt="image" src="https://github.com/user-attachments/assets/354b2cc8-a60c-4577-9419-901c247643fc" />
+<img width="1224" height="703" alt="image" src="https://github.com/user-attachments/assets/419d1b33-98cf-43d9-89b4-a06cc0c66f19" />
+
 
 
 **Truthlens** is an **AI-powered tool** designed to **detect, explain, and educate users about misinformation** across text, images, audio, and video.  
@@ -12,6 +14,7 @@ Our mission is simple: **Detect. Learn. Trust.**
 <img width="1326" height="661" alt="image" src="https://github.com/user-attachments/assets/f9119ae3-0e33-4446-981d-90fe9be8d0d3" />
 
 ---
+<img width="1194" height="682" alt="image" src="https://github.com/user-attachments/assets/11ff7145-bdb0-4abd-bc7c-705bf41ac6d7" />
 
 
 ## ✨ Key Features
