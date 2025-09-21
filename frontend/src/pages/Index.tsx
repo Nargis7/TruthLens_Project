@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Shield, 
   Search, 
@@ -15,10 +16,14 @@ import {
   Image as ImageIcon,
   FileText,
   Globe,
-  Zap
+  Zap,
+  LogOut,
+  User
 } from "lucide-react";
 
 const Index = () => {
+  const { user, logout, isAuthenticated } = useAuth();
+
   return (
     <div className="min-h-screen">
       {/* Navigation */}
@@ -45,12 +50,32 @@ const Index = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <Link to="/login">
-              <Button variant="ghost">Login</Button>
-            </Link>
-            <Link to="/signup">
-              <Button className="glow">Try Truthlens</Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <span className="text-sm text-muted-foreground">
+                  Welcome, {user?.name}
+                </span>
+                <Link to="/dashboard">
+                  <Button variant="outline">
+                    <User className="mr-2 h-4 w-4" />
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button variant="ghost" onClick={logout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="ghost">Login</Button>
+                </Link>
+                <Link to="/signup">
+                  <Button className="glow">Try Truthlens</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
