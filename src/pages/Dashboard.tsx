@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Upload, 
   Mic, 
@@ -70,19 +71,30 @@ const Dashboard = () => {
 
     setIsAnalyzing(true);
     
-    // Mock analysis
-    setTimeout(() => {
-      const mockScore = Math.floor(Math.random() * 100);
-      const mockStatus = mockScore > 70 ? "verified" : mockScore > 40 ? "suspicious" : "false";
+    try {
+      // Call the edge function for real analysis
+      const { data, error } = await supabase.functions.invoke('analyze-content', {
+        body: { content: content.trim() }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const analysis = data;
       
       const newCheck = {
         id: Date.now(),
         title: content.substring(0, 30) + (content.length > 30 ? "..." : ""),
         type: "text",
         time: "Just now",
-        status: mockStatus,
-        score: mockScore
+        status: analysis.status,
+        score: analysis.score,
+        analysis: analysis // Store full analysis for the report page
       };
+      
+      // Store analysis in localStorage for the report page
+      localStorage.setItem(`analysis_${newCheck.id}`, JSON.stringify(analysis));
       
       setRecentChecks([newCheck, ...recentChecks.slice(0, 2)]);
       setIsAnalyzing(false);
@@ -90,13 +102,23 @@ const Dashboard = () => {
       
       toast({
         title: "Analysis Complete",
-        description: `Content analyzed with ${mockScore}% credibility score.`,
-        variant: mockScore > 70 ? "default" : "destructive"
+        description: `Content analyzed with ${analysis.score}% credibility score.`,
+        variant: analysis.score > 70 ? "default" : "destructive"
       });
       
       // Navigate to report
       navigate(`/report/${newCheck.id}`);
-    }, 2000);
+      
+    } catch (error) {
+      console.error('Analysis error:', error);
+      setIsAnalyzing(false);
+      
+      toast({
+        title: "Analysis Failed",
+        description: "Unable to analyze content. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleFileUpload = () => {
